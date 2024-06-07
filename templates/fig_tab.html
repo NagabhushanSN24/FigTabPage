@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FigTabPage: {{ title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: left;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            margin: 20px 0;
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #009879;
+            color: #ffffff;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        tr:nth-child(even) {
+            background-color: #f3f3f3;
+        }
+        img {
+            max-height: 256px;
+            object-fit: cover;
+        }
+        .image-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: auto;
+        }
+        .detailed-path {
+            width: 100%;
+            max-width: 512px;
+            overflow-x: auto;
+            white-space: nowrap;
+            font-size: 12px;
+            margin-top: 5px;
+            height: 32px;
+            box-sizing: border-box;
+            justify-content: center;
+            text-align: center;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .pagination button {
+            padding: 5px 10px;
+            margin: 0 5px;
+            border: none;
+            background-color: #009879;
+            color: #ffffff;
+            cursor: pointer;
+        }
+        .pagination button[disabled] {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>FigTabPage: {{ title }}</h1>
+    <center>
+        <div class="detailed-path">{{ folder }}</div>
+    </center>
+    <div class="pagination">
+        {% if prev_page is not none %}
+        <a href="{{ prev_page }}"><button>Prev</button></a>
+        {% else %}
+        <a href="#"><button disabled>Prev</button></a>
+        {% endif %}
+
+        {% for idx, nav in navi %}
+        {% if idx != page and idx != '...' %}
+        <a href="{{ nav }}"><button>{{ idx }}</button></a>
+        {% else %}
+        <a href="#"><button disabled>{{ idx }}</button></a>
+        {% endif %}
+        {% endfor %}
+
+        {% if next_page is not none %}
+        <a href="{{ next_page }}"><button>Next</button></a>
+        {% else %}
+        <a href="#"><button disabled>Next</button></a>
+        {% endif %}
+
+    </div>
+    <table>
+        <thead>
+            <tr>
+                {% for ch in column_heads %}
+                <th>{{ ch }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                {% for img, desc in row %}
+                 <td>
+                    <div class="image-container">
+                        {% if img is not none %}
+                        <img src="file?path={{ img }}" alt="{{ img }}">
+                        {% endif %}
+                        {% if desc is not none %}
+                        <div class="detailed-path">{{ desc }}</div>
+                        {% endif %}
+                    </div>
+                    
+                
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="pagination">
+        {% if prev_page is not none %}
+        <a href="{{ prev_page }}"><button>Prev</button></a>
+        {% else %}
+        <a href="#"><button disabled>Prev</button></a>
+        {% endif %}
+
+        {% for idx, nav in navi %}
+        {% if idx != page and idx != '...' %}
+        <a href="{{ nav }}"><button>{{ idx }}</button></a>
+        {% else %}
+        <a href="#"><button disabled>{{ idx }}</button></a>
+        {% endif %}
+        {% endfor %}
+
+        {% if next_page is not none %}
+        <a href="{{ next_page }}"><button>Next</button></a>
+        {% else %}
+        <a href="#"><button disabled>Next</button></a>
+        {% endif %}
+
+    </div>
+</body>
+</html>
