@@ -49,7 +49,13 @@ def index():
 
         
         if query_index is not None:
-            query_index = query_index.replace(', ', ',')
+            while query_index.startswith(' '):
+                query_index = query_index[1:]
+            prev_len = len(query_index) + 1
+            while prev_len != len(query_index):
+                prev_len = len(query_index)
+                query_index = query_index.replace(', ', ',')
+
             query_index_list = list(query_index.split(","))
             index_list = [index for index in query_index_list if index in index_list]
 
@@ -82,32 +88,34 @@ def index():
         prev_page = None if prev_page < 1 else url_at_page(prev_page)
         next_page = None if next_page > num_pages else url_at_page(next_page)
 
-        if page - 10 > 1:
+        page_rad = 5
+
+        if page - page_rad > 1:
             navi.append((
                 1,
                 url_at_page(1)
             ))
 
-        if page - 10 > 2:
+        if page - page_rad > 2:
             navi.append((
                 "...",
                 "..."
             ))
 
-        for page_index in range(page - 10, page + 10 + 1):
+        for page_index in range(page - page_rad, page + page_rad + 1):
             if 1 <= page_index <= num_pages:
                 navi.append((
                     page_index,
                     url_at_page(page_index) 
                 ))
 
-        if page + 10 < num_pages - 1:
+        if page + page_rad < num_pages - 1:
             navi.append((
                 "...",
                 "..."
             ))
 
-        if page + 10 < num_pages:
+        if page + page_rad < num_pages:
             navi.append((
                 num_pages,
                 url_at_page(num_pages)

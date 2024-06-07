@@ -54,7 +54,7 @@
         }
         .code {
             width: 100%;
-            min-width: 64px;
+            min-width: 48px;
             max-width: 256px;
             overflow-x: auto;
             white-space: nowrap;
@@ -222,10 +222,9 @@
             document.body.removeChild(tempInput);
 
             const e = document.getElementById(the_id);
-            var orig = e.innerText;
             e.innerText = '(COPY)';
             setTimeout(function() {
-                e.innerText = orig;
+                e.innerText = text;
             }, 500);
         }
         
