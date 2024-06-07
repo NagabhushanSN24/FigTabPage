@@ -39,6 +39,13 @@ def index():
         index_list = [f[prefix:-suffix] for f in index_list]
         index_list = sorted(index_list)
 
+        query_index = request.args.get("query_index", None)
+        if query_index == '':
+            query_index = None
+        if query_index is not None:
+            query_index = query_index.replace(', ', ',')
+            index_list = list(query_index.split(","))
+
         columns = config.get("columns", [])
         column_heads = ["#"] + [c[0] for c in columns]
 
@@ -56,6 +63,8 @@ def index():
             rows.append(row)
 
         num_pages = (len(index_list) + images_per_page - 1) // images_per_page
+        page = max(page, 1)
+        page = min(page, num_pages)
         navi = []
         prev_page = int(page) - 1
         next_page = int(page) + 1
@@ -105,7 +114,9 @@ def index():
             prev_page=prev_page,
             next_page=next_page,
             navi=navi,
-            error=error_msg != ""
+            error=error_msg != "",
+            query_link=f"?config={config_file}&folder={folder}&query_index=",
+            last_query_index=query_index
         )
 
     

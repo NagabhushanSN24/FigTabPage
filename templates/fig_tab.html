@@ -81,6 +81,16 @@
             background-color: #cccccc;
             cursor: not-allowed;
         }
+        .search-container {
+            margin: 5px 0;
+            text-align: center;
+        }
+        .search-box {
+            padding: 5px;
+            font-size: 12px;
+            width: 256px;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
@@ -111,6 +121,14 @@
         <a href="#"><button disabled>Next</button></a>
         {% endif %}
 
+    </div>
+    
+    <div class="search-container">
+        <input type="text" id="searchBox" class="search-box"    
+            {% if last_query_index is not none %}
+            value="{{ last_query_index }}"
+            {% endif %}
+            placeholder="Show specific # (e.g., 00006_00,14612_00)">
     </div>
     <table>
         <thead>
@@ -163,6 +181,18 @@
         {% endif %}
 
     </div>
+    {% autoescape off %}
+    <script>
+        document.getElementById('searchBox').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                var query = this.value;
+                
+                window.location.href = '{{ query_link }}' + encodeURIComponent(query);
+                
+            }
+        });
+    </script>
+    {% endautoescape %}
     {% endif %}
 </body>
 </html>
