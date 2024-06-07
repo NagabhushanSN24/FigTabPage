@@ -15,6 +15,10 @@ def index():
 
     error_msg = ""
 
+    query_index = request.args.get("query_index", None)
+    if query_index == '':
+        query_index = None
+
     try:
         with open(config_file) as f:
             code = compile(f.read(), '', 'eval')
@@ -25,7 +29,11 @@ def index():
    
     # print(config)
 
-    kwargs = {}
+    kwargs = dict(
+        config_file=config_file,
+        folder=folder, 
+        last_query_index=query_index
+    )
 
     if len(config) > 0:
         import glob
@@ -39,12 +47,11 @@ def index():
         index_list = [f[prefix:-suffix] for f in index_list]
         index_list = sorted(index_list)
 
-        query_index = request.args.get("query_index", None)
-        if query_index == '':
-            query_index = None
+        
         if query_index is not None:
             query_index = query_index.replace(', ', ',')
-            index_list = list(query_index.split(","))
+            query_index_list = list(query_index.split(","))
+            index_list = [index for index in query_index_list if index in index_list]
 
         columns = config.get("columns", [])
         column_heads = ["#"] + [c[0] for c in columns]
@@ -107,6 +114,7 @@ def index():
             ))
 
         kwargs = dict(
+            config_file=config_file,
             folder=folder,   
             column_heads=column_heads,
             rows=rows,
@@ -115,7 +123,6 @@ def index():
             next_page=next_page,
             navi=navi,
             error=error_msg != "",
-            query_link=f"?config={config_file}&folder={folder}&query_index=",
             last_query_index=query_index
         )
 

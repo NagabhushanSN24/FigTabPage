@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FigTabPage: {{ title }}</title>
+    <title>FigTab: {{ title }}</title>
     
     <style>
         body {
@@ -52,7 +52,7 @@
             align-items: center;
             margin: auto;
         }
-        .detailed-path {
+        .code {
             width: 100%;
             max-width: 256px;
             overflow-x: auto;
@@ -63,6 +63,8 @@
             box-sizing: border-box;
             justify-content: center;
             text-align: center;
+            display: inline-block;
+            font-family: monospace;
         }
         .pagination {
             display: flex;
@@ -90,16 +92,32 @@
             font-size: 12px;
             width: 256px;
             box-sizing: border-box;
+            font-family: monospace;
         }
     </style>
 </head>
 <body>
-    <h1>FigTabPage: {{ title }}</h1>
+    <h1>FigTab: {{ title }}</h1>
 
+    
+    <div class="search-container">
+        Config File: <input type="text" id="search_box_config" class="search-box"    
+            {% if config_file is not none %}
+            value="{{ config_file }}"
+            {% endif %}
+            placeholder="Config File">
+        Folder: <input type="text" id="search_box_folder" class="search-box"    
+            {% if folder is not none %}
+            value="{{ folder }}"
+            {% endif %}
+            placeholder="Folder to show the results">
+        Search Index: <input type="text" id="search_box_query" class="search-box"    
+            {% if last_query_index is not none %}
+            value="{{ last_query_index }}"
+            {% endif %}
+            placeholder="e.g., 00006_00,14612_00">
+    </div>
     {% if not error %}
-    <center>
-        <input type="text" class="detailed-path" value="{{ folder }}" readonly />
-    </center>
     <div class="pagination">
         {% if prev_page is not none %}
         <a href="{{ prev_page }}"><button>Prev</button></a>
@@ -123,13 +141,7 @@
 
     </div>
     
-    <div class="search-container">
-        <input type="text" id="searchBox" class="search-box"    
-            {% if last_query_index is not none %}
-            value="{{ last_query_index }}"
-            {% endif %}
-            placeholder="Show specific # (e.g., 00006_00,14612_00)">
-    </div>
+    
     <table>
         <thead>
             <tr>
@@ -146,9 +158,9 @@
                     <div class="image-container">
                         {% if img is not none %}
                         <img src="file?path={{ img }}" alt="{{ img }}">
-                        <input type="text" class="detailed-path" value="{{ desc }}" readonly />
+                        <input type="text" class="code" value="{{ desc }}" readonly />
                         {% else %}
-                        <div class="detailed-path">{{ desc }}</div>
+                        <span class="code" onclick="copyToClipboard('{{ desc }},', 'index_{{ desc }}')" id="index_{{ desc }}">{{ desc }}</span>
                         {% endif %}
                     </div>
                     
@@ -183,14 +195,39 @@
     </div>
     {% autoescape off %}
     <script>
-        document.getElementById('searchBox').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                var query = this.value;
-                
-                window.location.href = '{{ query_link }}' + encodeURIComponent(query);
-                
-            }
-        });
+        function setupSearchBox(Id) {
+            document.getElementById(Id).addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    var config = document.getElementById('search_box_config').value;
+                    var folder = document.getElementById('search_box_folder').value;
+                    var query = document.getElementById('search_box_query').value;
+                    
+                    window.location.href = '?config=' + config + "&folder=" + folder + "&query_index=" + query;
+                    
+                }
+            });
+        }
+
+        setupSearchBox('search_box_config');
+        setupSearchBox('search_box_folder');
+        setupSearchBox('search_box_query');
+
+        function copyToClipboard(text, the_id) {
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            const e = document.getElementById(the_id);
+            var orig = e.innerText;
+            e.innerText = '(Copied)';
+            setTimeout(function() {
+                e.innerText = orig;
+            }, 500);
+        }
+        
     </script>
     {% endautoescape %}
     {% endif %}
