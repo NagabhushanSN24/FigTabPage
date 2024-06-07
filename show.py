@@ -25,6 +25,8 @@ def index():
    
     print(config)
 
+    kwargs = {}
+
     if len(config) > 0:
         import glob
         index_pattern = config.get("index_pattern", "*")
@@ -95,16 +97,21 @@ def index():
                 url_at_page(num_pages)
             ))
 
+        kwargs = dict(
+            folder=folder,   
+            column_heads=column_heads,
+            rows=rows,
+            page=page,
+            prev_page=prev_page,
+            next_page=next_page,
+            navi=navi,
+            error=error_msg != ""
+        )
+
     
     return render_template('fig_tab.html',
         title=config.get('title', error_msg),   
-        folder=folder,   
-        column_heads=column_heads,
-        rows=rows,
-        page=page,
-        prev_page=prev_page,
-        next_page=next_page,
-        navi=navi,
+        **kwargs
     )
 
 
