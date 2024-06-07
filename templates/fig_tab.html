@@ -54,6 +54,7 @@
         }
         .code {
             width: 100%;
+            min-width: 64px;
             max-width: 256px;
             overflow-x: auto;
             white-space: nowrap;
@@ -222,7 +223,7 @@
 
             const e = document.getElementById(the_id);
             var orig = e.innerText;
-            e.innerText = '(Copied)';
+            e.innerText = '(COPY)';
             setTimeout(function() {
                 e.innerText = orig;
             }, 500);
