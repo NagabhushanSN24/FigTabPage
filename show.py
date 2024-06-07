@@ -23,7 +23,7 @@ def index():
         config = {}
         error_msg = f"Error: Config file {config_file} not found"
    
-    print(config)
+    # print(config)
 
     kwargs = {}
 
@@ -125,4 +125,4 @@ def get_image():
         abort(404)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8233, ) 
+    app.run(debug=False, port=8233, ) 
