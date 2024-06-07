@@ -136,4 +136,4 @@ def get_image():
         abort(404)
 
 if __name__ == '__main__':
-    app.run(debug=False, port=8233, ) 
+    app.run(debug=False, port=8233, host="0.0.0.0") 
