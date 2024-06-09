@@ -1,5 +1,7 @@
 import os
 from flask import Flask, request, render_template, send_from_directory, abort
+import traceback
+import glob
 
 app_folder = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=os.path.join(app_folder, 'templates'))
@@ -23,9 +25,10 @@ def index():
         with open(config_file) as f:
             code = compile(f.read(), '', 'eval')
             config = eval(code)
-    except:
+    except Exception as e:
         config = {}
-        error_msg = f"Error: Config file {config_file} not found"
+        error_msg = f"Error: Config file {config_file} cannot be read"
+        traceback.print_exc()
    
     # print(config)
 
@@ -36,7 +39,6 @@ def index():
     )
 
     if len(config) > 0:
-        import glob
         index_pattern = config.get("index_pattern", "*")
         index_pattern = os.path.join(folder, index_pattern)
         prefix, suffix = index_pattern.split('*')
@@ -71,7 +73,14 @@ def index():
             row = [(None, index)]
             for column in columns:
                 _, column_pattern = column
-                column_image = os.path.join(folder, column_pattern.replace('*', index))
+                if isinstance(column_pattern, str):
+                    column_image = os.path.join(folder, column_pattern.replace('*', index))
+                else:
+                    column_image_candidates = glob.glob(os.path.join(folder, column_pattern(index)))
+                    if len(column_image_candidates) == 0:
+                        column_image = ""
+                    else:
+                        column_image = column_image_candidates[0]
                 row.append((column_image, column_image))
             rows.append(row)
 
