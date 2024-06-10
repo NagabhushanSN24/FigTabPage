@@ -12,6 +12,9 @@ def index():
     folder = request.args.get("folder", "None")
     page = int(request.args.get("page", 1))
 
+    if page == "":
+        page = 1
+
     config_file = os.path.expanduser(config_file)
     folder = os.path.expanduser(folder)
 
