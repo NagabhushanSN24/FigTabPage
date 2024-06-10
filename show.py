@@ -77,6 +77,7 @@ def index():
                     column_image = os.path.join(folder, column_pattern.replace('*', index))
                 else:
                     column_image_candidates = glob.glob(os.path.join(folder, column_pattern(index)))
+                    print(column_pattern(index), column_image_candidates)
                     if len(column_image_candidates) == 0:
                         column_image = ""
                     else:
