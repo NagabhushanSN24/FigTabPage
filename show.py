@@ -10,10 +10,11 @@ app = Flask(__name__, template_folder=os.path.join(app_folder, 'templates'))
 def index():
     config_file = request.args.get("config", "None")
     folder = request.args.get("folder", "None")
-    page = int(request.args.get("page", 1))
+    page = request.args.get("page", 1)
 
     if page == "":
         page = 1
+    page = int(page)
 
     config_file = os.path.expanduser(config_file)
     folder = os.path.expanduser(folder)
