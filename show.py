@@ -87,7 +87,7 @@ def index():
                 column_image_candidates = glob.glob(os.path.join(folder, column_pattern))
                 # print(column_pattern(index), column_image_candidates)
                 if len(column_image_candidates) == 0:
-                    column_image = ""
+                    column_image = column_pattern
                     if skip_incomplete:
                         row = None
                         break
