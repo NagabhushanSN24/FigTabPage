@@ -69,21 +69,30 @@ def index():
         L = images_per_page * (int(page) - 1)
         R = images_per_page * int(page)
 
+        skip_incomplete = config.get("skip_incomplete", False)
+
         for index in index_list[L:R]:
             row = [(None, index)]
             for column in columns:
                 _, column_pattern = column
                 if isinstance(column_pattern, str):
-                    column_image = os.path.join(folder, column_pattern.replace('*', index))
+                    column_pattern = column_pattern.replace('*', index)
                 else:
-                    column_image_candidates = glob.glob(os.path.join(folder, column_pattern(index)))
-                    print(column_pattern(index), column_image_candidates)
-                    if len(column_image_candidates) == 0:
-                        column_image = ""
-                    else:
-                        column_image = column_image_candidates[0]
+                    column_pattern = column_pattern(index)
+
+                column_image_candidates = glob.glob(os.path.join(folder, column_pattern))
+                # print(column_pattern(index), column_image_candidates)
+                if len(column_image_candidates) == 0:
+                    column_image = ""
+                    if skip_incomplete:
+                        row = None
+                        break
+                else:
+                    column_image = column_image_candidates[0]
                 row.append((column_image, column_image))
-            rows.append(row)
+
+            if row is not None:
+                rows.append(row)
 
         num_pages = (len(index_list) + images_per_page - 1) // images_per_page
         page = max(page, 1)
