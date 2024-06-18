@@ -154,7 +154,9 @@ def index():
             next_page=next_page,
             navi=navi,
             error=error_msg != "",
-            last_query_index=query_index
+            last_query_index=query_index,
+            img_max_width=config.get("img_max_width", 1024),
+            img_max_height=config.get("img_max_height", 256),
         )
 
     

@@ -43,7 +43,8 @@
             background-color: #f3f3f3;
         }
         img {
-            max-height: 256px;
+            max-height: {{ img_max_height }}px;
+            max-width: {{ img_max_width }}px;
             object-fit: cover;
         }
         .image-container {
@@ -158,7 +159,9 @@
                  <td>
                     <div class="image-container">
                         {% if img is not none %}
-                        <img src="file?path={{ img }}" alt="{{ img }}">
+                        <a href="file?path={{ img }}" target="_blank">
+                            <img src="file?path={{ img }}" alt="{{ img }}">
+                        </a>
                         <input type="text" class="code" value="{{ desc }}" readonly />
                         {% else %}
                         <span class="code" onclick="copyToClipboard('{{ desc }},', 'index_{{ desc }}')" id="index_{{ desc }}">{{ desc }}</span>
