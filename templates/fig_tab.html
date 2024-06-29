@@ -164,7 +164,7 @@
                         </a>
                         <input type="text" class="code" value="{{ desc }}" readonly />
                         {% else %}
-                        <span class="code" onclick="copyToClipboard('{{ desc }},', 'index_{{ desc }}')" id="index_{{ desc }}">{{ desc }}</span>
+                        <span class="code" onclick="copyToClipboard('{{ desc }},', '{{ desc }}', 'index_{{ desc }}')" id="index_{{ desc }}">{{ desc }}</span>
                         {% endif %}
                     </div>
                     
@@ -216,7 +216,7 @@
         setupSearchBox('search_box_folder');
         setupSearchBox('search_box_query');
 
-        function copyToClipboard(text, the_id) {
+        function copyToClipboard(text, orig_text, the_id) {
             const tempInput = document.createElement('input');
             tempInput.value = text;
             document.body.appendChild(tempInput);
@@ -225,9 +225,9 @@
             document.body.removeChild(tempInput);
 
             const e = document.getElementById(the_id);
-            e.innerText = '(COPY)';
+            e.innerText = '(copied)';
             setTimeout(function() {
-                e.innerText = text;
+                e.innerText = orig_text;
             }, 500);
         }
         
