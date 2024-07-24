@@ -6,6 +6,8 @@ import glob
 app_folder = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=os.path.join(app_folder, 'templates'))
 
+VER = "20240719_1"
+
 @app.route('/')
 def index():
     config_file = request.args.get("config", "None")
@@ -48,10 +50,23 @@ def index():
         prefix, suffix = index_pattern.split('*')
         prefix = len(prefix)
         suffix = len(suffix)
+
+        def get_index(f):
+            f = f[prefix:]
+            if suffix != 0:
+                f = f[:-suffix]
+            return f
         
         index_list = glob.glob(index_pattern)
-        index_list = [f[prefix:-suffix] for f in index_list]
+        index_list = [get_index(f) for f in index_list]
         index_list = sorted(index_list)
+
+        if config.get("shuffle", False):
+            import hashlib
+            index_list = sorted(index_list, key=lambda x: int(hashlib.md5(x.encode()).hexdigest(), 16))
+
+        # print(prefix, suffix)
+        # print(index_list)
 
         
         if query_index is not None:
@@ -93,7 +108,19 @@ def index():
                         break
                 else:
                     column_image = column_image_candidates[0]
-                row.append((column_image, column_image))
+
+                contents = column_image
+                if column_image.endswith(".txt"):
+                    try:
+                        with open(column_image) as f:
+                            contents = "\n".join(f.readlines())
+                    except:
+                        contents = f"Error: File {column_image} cannot be read"
+                else:
+                    from urllib.parse import quote
+                    contents = quote(contents, encoding='utf-8')
+
+                row.append((contents, column_image))
 
             if row is not None:
                 rows.append(row)
@@ -162,6 +189,7 @@ def index():
     
     return render_template('fig_tab.html',
         title=config.get('title', error_msg),   
+        ver=VER,
         **kwargs
     )
 
