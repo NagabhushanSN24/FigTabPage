@@ -204,4 +204,6 @@ def get_image():
         abort(404)
 
 if __name__ == '__main__':
+    import logging
+    app.logger.setLevel(logging.ERROR)
     app.run(debug=False, port=8233, host="0.0.0.0") 

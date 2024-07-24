@@ -240,6 +240,10 @@
                     var config = document.getElementById('search_box_config').value;
                     var folder = document.getElementById('search_box_folder').value;
                     var query = document.getElementById('search_box_query').value;
+
+                    config = encodeURIComponent(config);
+                    folder = encodeURIComponent(folder);
+                    query = encodeURIComponent(query);
                     
                     window.location.href = '?config=' + config + "&folder=" + folder + "&query_index=" + query;
                     
