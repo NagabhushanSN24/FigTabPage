@@ -61,6 +61,9 @@ def index():
         index_list = [get_index(f) for f in index_list]
         index_list = sorted(index_list)
 
+        if config.get("sort_as_number", False):
+            index_list = sorted(index_list, key=lambda x: int(x))
+
         if config.get("shuffle", False):
             import hashlib
             index_list = sorted(index_list, key=lambda x: int(hashlib.md5(x.encode()).hexdigest(), 16))
