@@ -5,7 +5,7 @@ I am introducing a new tool, FigTab, for table of figures generation, developed 
 
 - Good-looking visualization of table of figures, with dynamic paging and frozen table title
 
-- Support searching indices for key-cases visualization (attachment 3)
+- Support searching indices for key-cases visualization
 
 - Can be configured easily with a single configuration file for different folders, no explicit/repetitive html generation needed
 
