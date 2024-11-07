@@ -48,7 +48,7 @@ dict(
         # use a lambda function: index -> filename
         # support using * as regex .*, so that do not have to consider jpg/png, date of experiments, etc.
         ("Task",            lambda k: f"middle_figure/{k}*_person.*"),
-        ("Prompt",          "middle_figure/*_00_prompt.txt"),
+        ("Prompt",          lambda k: f"middle_figure/{k}*_prompt.txt"),
         ("Result",          lambda k: f"result/{k}*.*"),
         ("PoseMap",         lambda k: f"middle_figure/{k}*_posemap.*"),
         ("DensePose",       lambda k: f"middle_figure/{k}*_densepose.*"),
