@@ -10,13 +10,13 @@ I am introducing a new tool, FigTab, for table of figures generation, developed 
 - Can be configured easily with a single configuration file for different folders, no explicit/repetitive html generation needed
 
 ### Usage
-- You can deploy an session by modifying and running show.py, at port 8233 by default.
+- You can deploy an session by modifying and running show.py, at port `8233` by default.
 - Create a config file for your usage cases (see instructions in another section)
 - Go to the deployed website, copy the config file path and folder path into the boxes, and press enter
-- You can click on the index (eg, 00006) to copy it
+- You can click on the index (eg, `00006`) to copy it
 - If would like to search, input to the search index and press enter
   
-### Config File Generation:
+### Config File Generation
 - You need to generate a python file which only contains a python dict, following python grammar. Here is an example with comments (please copy to a code editor for better visualization)
 ```python
 dict(
