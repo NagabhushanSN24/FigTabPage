@@ -1,0 +1,64 @@
+name: FigTabPage
+on: [push]
+
+env:
+  AWS_DEFAULT_REGION: 'us-west-2'
+  ECR_REGISTRY: '157022308661.dkr.ecr.us-west-2.amazonaws.com'
+  ECR_REPOSITORY: figtabpage
+
+jobs:
+  version:
+    name: Determine Build Number
+    runs-on: [self-hosted, general-apps]
+    if: success() && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'nobuild')
+    outputs:
+      BUILD_NUMBER: ${{ steps.gitversion.outputs.semVer }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0
+        with:
+          versionSpec: "5.x"
+
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0
+        with:
+          useConfigFile: true
+
+  build:
+    name: Build & Release the docker image
+    runs-on: [self-hosted, general-apps]
+    if: success() && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'nobuild')
+    needs: [version]
+    env:
+      BUILD_NUMBER: ${{ needs.version.outputs.BUILD_NUMBER }}
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Docker build and push - static
+        env:
+            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.BUILD_NUMBER }}
