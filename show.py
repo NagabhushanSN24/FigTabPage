@@ -123,7 +123,7 @@ def index():
                     column_image = column_image_candidates[0]
 
                 contents = column_image
-                if column_image.endswith(".txt"):
+                if Path(column_image).suffix in ['.txt', '.json']:
                     try:
                         with open(column_image) as f:
                             contents = "\n".join(f.readlines())
