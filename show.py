@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from pathlib import Path
@@ -9,7 +10,7 @@ import glob
 app_folder = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=os.path.join(app_folder, 'templates'))
 
-VER = "20250227"
+VER = "20250924"
 
 
 def match_files(folder, index_pattern):
@@ -107,7 +108,7 @@ def index():
         for matched_file_data in matched_files_data[L:R]:
             row = [(None, '/'.join(matched_file_data[1]))]
             for column in columns:
-                _, column_pattern = column
+                column_pattern = column[1]
                 if not column_pattern.startswith("/"):
                     column_pattern = os.path.join(folder, column_pattern)
                 column_pattern = format_column(column_pattern, matched_file_data[1])
@@ -123,10 +124,19 @@ def index():
                     column_image = column_image_candidates[0]
 
                 contents = column_image
-                if Path(column_image).suffix in ['.txt', '.json']:
+                if Path(column_image).suffix in ['.txt']:
                     try:
                         with open(column_image) as f:
                             contents = "\n".join(f.readlines())
+                    except:
+                        contents = f"Error: File {column_image} cannot be read"
+                elif Path(column_image).suffix in ['.json']:
+                    try:
+                        with open(column_image) as f:
+                            json_data = json.load(f)
+                        keys = columns[2] if len(columns) >= 3 else list(json_data.keys())
+                        filtered_json_data = {k: json_data[k] for k in keys if k in json_data}
+                        contents = json.dumps(filtered_json_data, indent=4)
                     except:
                         contents = f"Error: File {column_image} cannot be read"
                 else:

@@ -56,20 +56,21 @@
             flex-direction: column;
             align-items: center;
             margin: auto;
+            max-width: {{ img_max_width }}px;   /* keep column width tied to media */
+            width: 100%;
         }
         .code {
             width: 100%;
-            min-width: 48px;
-            max-width: 256px;
-            overflow-x: auto;
-            white-space: nowrap;
+            min-width: 0;                       /* allow shrinking in table layouts */
+            max-width: {{ img_max_width }}px;   /* match media width */
+            overflow: hidden;                   /* hide overflow instead of scrolling */
+            text-overflow: ellipsis;            /* show … when clipped */
+            white-space: nowrap;                /* single-line truncation */
             font-size: 12px;
             margin-top: 5px;
-            height: 20px;
             box-sizing: border-box;
-            justify-content: center;
             text-align: center;
-            display: inline-block;
+            display: block;                     /* makes width behave predictably */
             font-family: monospace;
         }
         .codeblock {
@@ -197,9 +198,9 @@
                                 <img src="file?path={{ img }}" alt="{{ img }}">
                             </a>
                             {% endif %}
-                            <input type="text" class="code" value="{{ path }}" readonly />
+                            <input type="text" class="code" value="{{ path }}" readonly title="{{ path }}" />
                         {% else %}
-                        <input type="text" class="code" value="{{ path }}" readonly onclick="copyToClipboard('{{ path }},', '{{ path }}', 'index_{{ path }}')" id="index_{{ path }}"/>
+                        <input type="text" class="code" value="{{ path }}" readonly title="{{ path }}" onclick="copyToClipboard('{{ path }},', '{{ path }}', 'index_{{ path }}')" id="index_{{ path }}"/>
                         {% endif %}
                     </div>
                     
