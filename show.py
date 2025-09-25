@@ -10,7 +10,7 @@ import glob
 app_folder = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=os.path.join(app_folder, 'templates'))
 
-VER = "20250924"
+VER = "20250925"
 
 
 def match_files(folder, index_pattern):
@@ -134,7 +134,7 @@ def index():
                     try:
                         with open(column_image) as f:
                             json_data = json.load(f)
-                        keys = columns[2] if len(columns) >= 3 else list(json_data.keys())
+                        keys = column[2] if len(column) >= 3 else list(json_data.keys())
                         filtered_json_data = {k: json_data[k] for k in keys if k in json_data}
                         contents = json.dumps(filtered_json_data, indent=4)
                     except:

@@ -181,7 +181,7 @@
                  <td>
                     <div class="image-container">
                         {% if img is not none %}
-                            {% if path.endswith('.txt') %}
+                            {% if path.endswith('.txt') or path.endswith('.json') %}
                             <textarea class="codeblock" readonly>{{ img }}</textarea>
 
                             {% elif path.endswith('.mp4') %}
