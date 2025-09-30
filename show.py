@@ -10,7 +10,7 @@ import glob
 app_folder = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=os.path.join(app_folder, 'templates'))
 
-VER = "20250925"
+VER = "20250930"
 
 
 def match_files(folder, index_pattern):
@@ -102,7 +102,6 @@ def index():
         images_per_page = config.get("images_per_page", 20)
         L = images_per_page * (int(page) - 1)
         R = images_per_page * int(page)
-
         skip_incomplete = config.get("skip_incomplete", False)
 
         for matched_file_data in matched_files_data[L:R]:
@@ -207,6 +206,7 @@ def index():
             last_query_index=query_index,
             img_max_width=config.get("img_max_width", 1024),
             img_max_height=config.get("img_max_height", 256),
+            image_max_resolution=config.get("image_max_resolution", None),
         )
 
     
@@ -216,13 +216,78 @@ def index():
         **kwargs
     )
 
-
 @app.route('/file')
 def get_image():
+    """Serve files. If `max_side` is provided and the file is an image, serve a downsampled, cached version.
+    Query params:
+      - path: absolute or relative file path
+      - max_side: optional integer; if provided and >0, images are resized so the longer side == max_side
+    """
+    from PIL import Image, ImageOps
+    import io
+    import mimetypes
+    import pathlib
+    import hashlib
     path = request.args.get("path", "None")
+    max_side = request.args.get("max_side", None)
+    # Normalize and secure path
     path = os.path.abspath(path)
     try:
-        return send_from_directory(os.path.dirname(path), os.path.basename(path))
+        # If no resizing requested, just send the original
+        if not max_side or str(max_side).lower() == "none":
+            return send_from_directory(os.path.dirname(path), os.path.basename(path))
+        try:
+            max_side = int(max_side)
+        except Exception:
+            max_side = None
+        if not max_side or max_side <= 0:
+            return send_from_directory(os.path.dirname(path), os.path.basename(path))
+
+        # Only handle common image types
+        ext = os.path.splitext(path)[1].lower()
+        image_exts = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff"}
+        if ext not in image_exts:
+            return send_from_directory(os.path.dirname(path), os.path.basename(path))
+
+        # Build a cache path that invalidates when source mtime changes
+        src_mtime = int(os.path.getmtime(path))
+        cache_root = os.path.join(app_folder, ".cache_images")
+        os.makedirs(cache_root, exist_ok=True)
+        # hash by absolute path + mtime + max_side to avoid collisions
+        cache_key = hashlib.sha256((path + f"|{src_mtime}|{max_side}").encode("utf-8")).hexdigest()[:24]
+        cache_name = f"{cache_key}_{max_side}{ext}"
+        cache_path = os.path.join(cache_root, cache_name)
+
+        if os.path.exists(cache_path):
+            return send_from_directory(cache_root, cache_name)
+
+        # Load and downsample with EXIF orientation handled
+        with Image.open(path) as im:
+            im = ImageOps.exif_transpose(im)
+            w, h = im.size
+            longer = max(w, h)
+            if longer <= max_side:
+                # No need to resize: cache original bytes to speed up future requests
+                im.save(cache_path)
+                return send_from_directory(cache_root, cache_name)
+            scale = max_side / float(longer)
+            new_w = max(1, int(round(w * scale)))
+            new_h = max(1, int(round(h * scale)))
+            # Use high-quality downsampling
+            im = im.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+            save_kwargs = {}
+            if ext in {".jpg", ".jpeg"}:
+                # Reasonable quality to reduce size
+                save_kwargs.update(dict(quality=88, optimize=True, progressive=True))
+            elif ext == ".png":
+                save_kwargs.update(dict(optimize=True))
+            elif ext == ".webp":
+                save_kwargs.update(dict(quality=88, method=4))
+
+            im.save(cache_path, **save_kwargs)
+
+        return send_from_directory(cache_root, cache_name)
     except FileNotFoundError:
         abort(404)
 

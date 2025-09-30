@@ -121,6 +121,7 @@
     </style>
 </head>
 <body>
+    {% set image_max_resolution = image_max_resolution if image_max_resolution is defined else none %}
     <h1>FigTab: {{ title }}</h1>
 
     
@@ -194,7 +195,7 @@
 
                             {% else %}
                             <a href="file?path={{ img }}" target="_blank">
-                                <img src="file?path={{ img }}" alt="Not Found">
+                                <img src="file?path={{ img }}{% if image_max_resolution is not none %}&max_side={{ image_max_resolution }}{% endif %}" alt="Not Found">
                             </a>
                             {% endif %}
                             <input type="text" class="code" value="{{ path }}" readonly title="{{ path }}" />
