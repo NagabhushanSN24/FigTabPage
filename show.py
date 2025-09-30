@@ -216,6 +216,7 @@ def index():
         **kwargs
     )
 
+
 @app.route('/file')
 def get_image():
     """Serve files. If `max_side` is provided and the file is an image, serve a downsampled, cached version.
@@ -228,6 +229,8 @@ def get_image():
     import mimetypes
     import pathlib
     import hashlib
+    import time
+
     path = request.args.get("path", "None")
     max_side = request.args.get("max_side", None)
     # Normalize and secure path
@@ -253,6 +256,50 @@ def get_image():
         src_mtime = int(os.path.getmtime(path))
         cache_root = os.path.join(app_folder, ".cache_images")
         os.makedirs(cache_root, exist_ok=True)
+
+        # -- Cache policy: cleanup before use --
+        # 1) Delete files older than 10 days
+        # 2) Enforce 10 GiB soft cap by deleting oldest files first
+        TEN_DAYS_SEC = 10 * 24 * 60 * 60
+        SIZE_CAP_BYTES = 10 * 1024 * 1024 * 1024  # 10 GiB
+        now = time.time()
+
+        # Time-based cleanup and initial listing
+        total_size = 0
+        entries = []
+        try:
+            with os.scandir(cache_root) as it:
+                for de in it:
+                    if not de.is_file():
+                        continue
+                    try:
+                        st = de.stat()
+                        if (now - st.st_mtime) > TEN_DAYS_SEC:
+                            try:
+                                os.remove(de.path)
+                            except OSError:
+                                pass
+                        else:
+                            entries.append((de.path, st.st_size, st.st_mtime))
+                            total_size += st.st_size
+                    except OSError:
+                        pass
+        except FileNotFoundError:
+            pass
+
+        # Size-cap cleanup (oldest first)
+        if total_size > SIZE_CAP_BYTES:
+            entries.sort(key=lambda x: x[2])  # by mtime asc
+            i = 0
+            while total_size > SIZE_CAP_BYTES and i < len(entries):
+                p, sz, _ = entries[i]
+                try:
+                    os.remove(p)
+                    total_size -= sz
+                except OSError:
+                    pass
+                i += 1
+
         # hash by absolute path + mtime + max_side to avoid collisions
         cache_key = hashlib.sha256((path + f"|{src_mtime}|{max_side}").encode("utf-8")).hexdigest()[:24]
         cache_name = f"{cache_key}_{max_side}{ext}"
