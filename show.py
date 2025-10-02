@@ -10,7 +10,7 @@ import glob
 app_folder = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=os.path.join(app_folder, 'templates'))
 
-VER = "20250930"
+VER = "20251002"
 
 
 def match_files(folder, index_pattern):
@@ -70,9 +70,20 @@ def index():
 
     if len(config) > 0:
         matched_files_data = match_files(folder, config['index_pattern'])
-        matched_files_data = sorted(matched_files_data, key=lambda x: x[0])
+        # Sorting: if 'sort' is configured, use metric-based score; else default to alphabetical
+        if config.get('sort'):
+            columns = config.get('columns', [])
+            def _key(item):
+                groups = item[1]
+                primary = compute_sort_key_for_sample(config, folder, columns, groups)
+                secondary = secondary_sort_tuple(config.get('sort', {}), groups)
+                return (primary[0], primary[1],) + secondary
+            matched_files_data = sorted(matched_files_data, key=_key)
+        else:
+            matched_files_data = sorted(matched_files_data, key=lambda x: x[0])
 
-        if config.get("shuffle", False):
+
+        if (not config.get('sort')) and config.get("shuffle", False):
             import hashlib
             matched_files_data = sorted(matched_files_data, key=lambda x: int(hashlib.md5(x[0].encode()).hexdigest(), 16))
         
@@ -337,6 +348,171 @@ def get_image():
         return send_from_directory(cache_root, cache_name)
     except FileNotFoundError:
         abort(404)
+
+
+
+# ---- Sorting helpers (metric-based) ----
+
+def _resolve_path_from_ref(config, folder, columns, ref_or_path, groups):
+    """
+    Resolve a JSON file path either from a column title reference or a direct path template.
+    - If ref_or_path is a dict with 'ref', look up the matching column title and use its path.
+    - If it has 'path', use that directly.
+    Paths may include $1, $2... capture placeholders; we fill them from `groups`.
+    Returns an absolute path string.
+    """
+    path_template = None
+    if isinstance(ref_or_path, dict) and 'ref' in ref_or_path:
+        ref_name = ref_or_path['ref']
+        # columns is a list of tuples: (title, path, [optional json keys list])
+        match = None
+        for c in columns:
+            if len(c) > 0 and c[0] == ref_name:
+                match = c
+                break
+        if match is None:
+            raise ValueError(f"Sort config error: ref '{ref_name}' not found in columns")
+        path_template = match[1]
+    else:
+        # assume dict with 'path' or a raw string path template
+        path_template = ref_or_path.get('path') if isinstance(ref_or_path, dict) else str(ref_or_path)
+
+    if not path_template:
+        raise ValueError("Sort config error: missing 'path' or 'ref'")
+
+    if not path_template.startswith('/'):
+        path_template = os.path.join(folder, path_template)
+
+    # Fill $1, $2, ...
+    path_filled = format_column(path_template, groups)
+    return path_filled
+
+
+def _read_json_cached(json_cache, path):
+    if path in json_cache:
+        return json_cache[path]
+    with open(path, 'r') as f:
+        data = json.load(f)
+    json_cache[path] = data
+    return data
+
+
+def _extract_numeric(dct, key):
+    """Extract a single numeric value from dict by key (no nesting)."""
+    val = dct[key]
+    # Allow string numbers
+    if isinstance(val, str):
+        try:
+            val = float(val)
+        except:
+            pass
+    if not isinstance(val, (int, float)):
+        raise ValueError(f"Non-numeric value for key '{key}': {val}")
+    return float(val)
+
+
+def _compute_term_value(term, *, config, folder, columns, groups, json_cache):
+    metric = term.get('metric', 'abs_diff')
+    weight = float(term.get('weight', 1.0))
+
+    def read_desc(desc):
+        path = _resolve_path_from_ref(config, folder, columns, desc, groups)
+        data = _read_json_cached(json_cache, path)
+        key = desc.get('key')
+        if key is None:
+            raise ValueError("Sort term missing 'key'")
+        return _extract_numeric(data, key)
+
+    eps = 1e-12
+
+    if metric in ('abs_diff', 'squared_error', 'diff', 'ratio'):
+        gt_desc = term.get('gt')
+        pred_desc = term.get('pred')
+        if gt_desc is None or pred_desc is None:
+            raise ValueError(f"Metric '{metric}' requires 'gt' and 'pred'")
+        gt = read_desc(gt_desc)
+        pred = read_desc(pred_desc)
+        d = pred - gt
+        if metric == 'abs_diff':
+            v = abs(d)
+        elif metric == 'squared_error':
+            v = d * d
+        elif metric == 'diff':
+            v = d
+        elif metric == 'ratio':
+            v = pred / (abs(gt) + eps)
+    elif metric == 'value':
+        # Read single descriptor under key 'of' or 'pred'
+        desc = term.get('of') or term.get('pred')
+        if desc is None:
+            raise ValueError("Metric 'value' needs 'of' (or 'pred') descriptor")
+        v = read_desc(desc)
+    else:
+        raise ValueError(f"Unknown metric: {metric}")
+
+    return weight * float(v)
+
+
+def _aggregate(values, how):
+    if not values:
+        return float('nan')
+    if how == 'sum':
+        return sum(values)
+    if how == 'mean':
+        return sum(values) / len(values)
+    if how == 'max':
+        return max(values)
+    if how == 'min':
+        return min(values)
+    raise ValueError(f"Unknown aggregate: {how}")
+
+
+def compute_sort_key_for_sample(config, folder, columns, groups):
+    """Return (missing_flag, score) given a sample's capture groups."""
+    sort_cfg = config.get('sort')
+    if not sort_cfg:
+        return (0, 0.0)  # neutral
+
+    aggregate = sort_cfg.get('aggregate', 'sum')
+    missing_policy = sort_cfg.get('missing', 'last')
+    ascending = bool(sort_cfg.get('ascending', True))
+    terms = sort_cfg.get('terms', [])
+
+    json_cache = {}
+    values = []
+    try:
+        for term in terms:
+            values.append(_compute_term_value(term, config=config, folder=folder, columns=columns, groups=groups, json_cache=json_cache))
+        score = _aggregate(values, aggregate)
+        if not ascending:
+            score = -score
+        return (0, float(score))
+    except Exception as e:
+        # If missing files or bad keys, handle per policy
+        if missing_policy == 'error':
+            raise
+        # place missing first or last by setting flag
+        flag = 1 if missing_policy == 'last' else -1
+        # neutral score so only flag dictates position
+        return (flag, float('inf') if missing_policy == 'last' else float('-inf'))
+
+
+def secondary_sort_tuple(sort_cfg, groups):
+    tups = []
+    for sec in sort_cfg.get('secondary', []):
+        # support capture key like "$1"
+        key = sec.get('key')
+        if key and key.startswith('$'):
+            try:
+                idx = int(key[1:]) - 1
+                tups.append(groups[idx])
+            except:
+                tups.append('')
+        else:
+            tups.append('')
+    return tuple(tups)
+
+# ---- End sorting helpers ----
 
 if __name__ == '__main__':
     import logging
