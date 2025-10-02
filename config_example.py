@@ -10,7 +10,6 @@ dict(
     ],
     images_per_page=20,
     image_max_resolution=256,  # Downsample images to this resolution for faster loading (set to None to keep original resolution)
-    # Downsample images to this resolution for faster loading (set to None to keep original resolution)
     sort={
         "ascending": True,  # default True
         "aggregate": "sum",  # sum | mean | max | min
